@@ -25,7 +25,7 @@ import { login } from "@/actions/login";
 export const LoginForm = () => {
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
-  const [isPending] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
@@ -38,7 +38,21 @@ export const LoginForm = () => {
   const onSubmit = (values: z.infer<typeof LoginSchema>) => {
     setError("");
     setSuccess("");
-    login(values);
+    startTransition(() => {
+      login(values)
+        .then((data) => {
+          if (data?.error) {
+            form.reset();
+            setError(data.error);
+          }
+
+          if (data?.success) {
+            form.reset();
+            setSuccess(data.success);
+          }
+        })
+        .catch(() => setError("Something went wrong"));
+    });
   };
 
   return (
@@ -60,7 +74,7 @@ export const LoginForm = () => {
                   <FormControl>
                     <Input
                       {...field}
-                      disabled={isPending}
+                      disabled={isPending} // disabled based on isPending
                       placeholder="john.doe@example.com"
                       type="email"
                     />
@@ -78,7 +92,7 @@ export const LoginForm = () => {
                   <FormControl>
                     <Input
                       {...field}
-                      disabled={isPending}
+                      disabled={isPending} // disabled based on isPending
                       placeholder="******"
                       type="password"
                     />
@@ -99,6 +113,8 @@ export const LoginForm = () => {
           <FormError message={error} />
           <FormSuccess message={success} />
           <Button disabled={isPending} type="submit" className="w-full">
+            {" "}
+            {/** disabled */}
             Login
           </Button>
         </form>
